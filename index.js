@@ -35,6 +35,16 @@ app.get("/authors/:authorsId", (req, res, _next) => {
   res.json(authorInfos);
 });
 
+app.get("/authors/:authorsId/books", (req, res, _next) => {
+  const authorsId = authors[parseInt(req.params.authorsId) - 1];
+  if (!authorsId) {
+    return res.json({ errorMessage: "The Id of our API start form 1 to 4" });
+  }
+  const authorBooks = authorsId.books;
+
+  res.json(authorBooks);
+});
+
 app.listen(8000, () => {
   console.log("listening on port 8000");
 });
