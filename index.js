@@ -1,68 +1,81 @@
 const express = require("express");
 const app = express();
-const authors = [
-  {
-    name: "Lawrence Nowell",
-    nationality: "UK",
-    books: ["Beowulf"],
-  },
-  {
-    name: "William Shakespeare",
-    nationality: "UK",
-    books: ["Hamlet", "Othello", "Romeo and Juliet", "MacBeth"],
-  },
-  {
-    name: "Charles Dickens",
-    nationality: "US",
-    books: ["Oliver Twist", "A Christmas Carol"],
-  },
-  {
-    name: "Oscar Wilde",
-    nationality: "UK",
-    books: ["The Picture of Dorian Gray", "The Importance of Being Earnest"],
-  },
-];
+const dotenv = require("dotenv");
+dotenv.config({
+  path: "./config.env",
+});
+const { Pool } = require("pg");
+const Postgres = new Pool({ ssl: { rejectUnauthorized: false } });
+app.use(express.json());
+
 app.get("/", (_req, res, _next) => {
   res.json("Authors API");
 });
-// version send
-app.get("/authors/:authorsId", (req, res, _next) => {
-  const authorsId = authors[parseInt(req.params.authorsId) - 1];
-  if (!authorsId) {
-    return res.json({ errorMessage: "The Id of our API start form 1 to 4" });
+
+app.get("/authors/:id", async (req, res, _next) => {
+  const authorsId = req.params.id - 1;
+
+  let author;
+  try {
+    author = await Postgres.query("SELECT name, nationality FROM authors");
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: "Error",
+    });
   }
-  const authorInfos = `${authorsId.name}, ${authorsId.nationality}`;
-  res.send(authorInfos);
+  const result = author.rows[authorsId];
+  res.send(`${result.name}, ${result.nationality}`);
 });
 
-app.get("/authors/:authorsId/books", (req, res, _next) => {
-  const authorsId = authors[parseInt(req.params.authorsId) - 1];
-  if (!authorsId) {
-    return res.json({ errorMessage: "The Id of our API start form 1 to 4" });
+app.get("/authors/:id/books", async (req, res, _next) => {
+  const authorsId = req.params.id - 1;
+  let author;
+  try {
+    author = await Postgres.query("SELECT books FROM authors");
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: "Error",
+    });
   }
+  const result = author.rows[authorsId].books;
 
-  res.send(authorsId.books.join(", "));
+  res.send(result.join(", "));
 });
 
-// version json
-app.get("/json/authors/:authorsId", (req, res, _next) => {
-  const authorsId = authors[parseInt(req.params.authorsId) - 1];
-  if (!authorsId) {
-    return res.json({ errorMessage: "The Id of our API start form 1 to 4" });
+//version json
+
+app.get("/json/authors/:id", async (req, res, _next) => {
+  const authorsId = req.params.id - 1;
+
+  let author;
+  try {
+    author = await Postgres.query("SELECT name, nationality FROM authors");
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: "Error",
+    });
   }
-  res.json({
-    name: authorsId.name,
-    nationality: authorsId.nationality,
-  });
+
+  res.json(author.rows[authorsId]);
 });
 
-app.get("/json/authors/:authorsId/books", (req, res, _next) => {
-  const authorsId = authors[parseInt(req.params.authorsId) - 1];
-  if (!authorsId) {
-    return res.json({ errorMessage: "The Id of our API start form 1 to 4" });
+app.get("/json/authors/:id/books", async (req, res, _next) => {
+  const authorsId = req.params.id - 1;
+
+  let author;
+  try {
+    author = await Postgres.query("SELECT books FROM authors");
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({
+      message: "Error",
+    });
   }
 
-  res.json({ books: authorsId.books });
+  res.json(author.rows[authorsId]);
 });
 
 app.listen(8000, () => {
